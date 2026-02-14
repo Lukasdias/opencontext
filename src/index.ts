@@ -195,4 +195,6 @@ program
     }
   });
 
-program.parse();
+if (import.meta.main) {
+  program.parse();
+}
