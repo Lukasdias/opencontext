@@ -23,7 +23,13 @@ async function readConfig() {
   }
 }
 
-async function writeConfig(config) {
+interface OpenCodeConfig {
+  $schema?: string;
+  plugin?: string[];
+  [key: string]: unknown;
+}
+
+async function writeConfig(config: OpenCodeConfig): Promise<void> {
   await fs.writeFile(CONFIG_PATH, JSON.stringify(config, null, 2) + '\n');
 }
 
@@ -38,7 +44,7 @@ async function install() {
     config.plugin = [];
   }
   
-  const pluginName = 'opencontext';
+  const pluginName = 'opencode-context';
   
   if (config.plugin.includes(pluginName)) {
     console.log('✓ OpenContext already in plugins');

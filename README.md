@@ -1,4 +1,4 @@
-# OpenContext
+# opencode-context
 
 Smart file finder for codebases with relevance scoring. Includes an OpenCode plugin.
 
@@ -10,14 +10,14 @@ Add to `~/.config/opencode/opencode.json`:
 
 ```json
 {
-  "plugin": ["opencontext"]
+  "plugin": ["opencode-context"]
 }
 ```
 
 Or run:
 
 ```bash
-bunx opencontext install
+bunx opencode-context install
 ```
 
 OpenCode will auto-install the plugin from npm on next startup.
@@ -25,9 +25,9 @@ OpenCode will auto-install the plugin from npm on next startup.
 ### CLI
 
 ```bash
-npm install -g opencontext
+npm install -g opencode-context
 # or
-bun install -g opencontext
+bun install -g opencode-context
 ```
 
 ## OpenCode Plugin Usage
