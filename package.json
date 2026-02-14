@@ -1,0 +1,52 @@
+{
+  "name": "opencontext",
+  "version": "1.0.0",
+  "description": "Smart file finder for codebases - semantic search with confidence scoring. Also available as an OpenCode plugin.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "opencontext": "dist/index.js",
+    "opencontext-install": "dist/install.js"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "bun build ./src/index.ts --outfile ./dist/index.js --target node && bun build ./src/plugin.ts --outfile ./dist/plugin.js --target node && bun build ./src/install.ts --outfile ./dist/install.js --target node && echo '#!/usr/bin/env node' | cat - ./dist/index.js > temp && mv temp ./dist/index.js && chmod +x ./dist/index.js",
+    "build:types": "tsc --emitDeclarationOnly",
+    "dev": "bun run src/index.ts",
+    "test": "bun test",
+    "prepublishOnly": "bun run build && bun run build:types"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.9.1",
+    "@opencode-ai/plugin": "^1.2.2",
+    "commander": "^12.0.0",
+    "fast-glob": "^3.3.2",
+    "picocolors": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.11",
+    "bun-types": "latest",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "file-finder",
+    "code-search",
+    "semantic-search",
+    "cli",
+    "tui",
+    "developer-tools",
+    "codebase",
+    "context",
+    "intelligent-search"
+  ],
+  "author": "",
+  "license": "MIT"
+}
