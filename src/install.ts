@@ -44,7 +44,7 @@ async function install() {
     config.plugin = [];
   }
   
-  const pluginName = 'opencode-context';
+  const pluginName = 'opencode-context@latest';
   
   if (config.plugin.includes(pluginName)) {
     console.log('✓ OpenContext already in plugins');

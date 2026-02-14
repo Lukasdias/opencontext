@@ -10,14 +10,14 @@ Add to `~/.config/opencode/opencode.json`:
 
 ```json
 {
-  "plugin": ["opencode-context"]
+  "plugin": ["opencode-context@latest"]
 }
 ```
 
 Or run:
 
 ```bash
-bunx opencode-context install
+bunx opencode-context@latest install
 ```
 
 OpenCode will auto-install the plugin from npm on next startup.
