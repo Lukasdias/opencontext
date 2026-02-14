@@ -1,103 +1,28 @@
 # OpenContext
 
-Smart file finder for codebases - semantic search with confidence scoring.
-
-## Quick Install (Copy & Paste)
-
-For **humans** - paste this to your LLM agent (Claude Code, Cursor, etc):
-
-```
-Install opencontext plugin by following the instructions here:
-https://raw.githubusercontent.com/lukashdias/opencontext/refs/heads/main/README.md
-```
-
-For **LLM agents** - fetch and follow the installation guide:
-
-```bash
-curl -s https://raw.githubusercontent.com/lukashdias/opencontext/refs/heads/main/README.md
-```
-
----
+Smart file finder for codebases with relevance scoring. Includes an OpenCode plugin.
 
 ## Installation
 
-### For Humans
+### OpenCode Plugin
+
+Add to `~/.config/opencode/opencode.json`:
+
+```json
+{
+  "plugin": ["opencontext"]
+}
+```
+
+Or run:
 
 ```bash
-# Add to your opencode.json plugins array
 bunx opencontext install
 ```
 
-Or manually add to `~/.config/opencode/opencode.json`:
+OpenCode will auto-install the plugin from npm on next startup.
 
-```json
-{
-  "plugins": ["opencontext"]
-}
-```
-
-### For LLM Agents
-
-If you're an LLM Agent helping set up OpenContext, follow these steps:
-
-**Step 1: Check if OpenCode is installed**
-
-```bash
-opencode --version
-```
-
-**Step 2: Add plugin to config**
-
-Read the user's `~/.config/opencode/opencode.json` and add `"opencontext"` to the plugins array. Create the file if it doesn't exist:
-
-```json
-{
-  "$schema": "https://opencode.ai/config.json",
-  "plugins": ["opencontext"]
-}
-```
-
-**Step 3: Verify**
-
-```bash
-opencode --version
-```
-
-### Say 'Done!' to the user
-
----
-
-## Usage
-
-The agent can use the `find_files` tool to locate relevant files:
-
-```
-find_files query="auth middleware" maxFiles=5
-find_files query="user model" minScore=30
-find_files query="database config" includeConfigs=true
-```
-
-**Tool arguments:**
-- `query` (required) - Search query (e.g., "auth middleware", "user model")
-- `maxFiles` - Maximum results (default: 5)
-- `minScore` - Minimum relevance 0-100 (default: 15)
-- `includeTests` - Include test files (default: false)
-- `includeConfigs` - Include config files (default: false)
-- `includeDocs` - Include documentation (default: false)
-
----
-
-## Why OpenContext?
-
-**Reduces token usage** - Instead of agent reading 50 files to find "UserService", it queries `find_files` → gets 5 most relevant paths → reads only those.
-
-**Always fresh** - Indexes on every query, no stale data.
-
-**Smart scoring** - Considers filename, filepath, content, exports, imports, and semantic hints.
-
----
-
-## As CLI
+### CLI
 
 ```bash
 npm install -g opencontext
@@ -105,20 +30,65 @@ npm install -g opencontext
 bun install -g opencontext
 ```
 
-### Examples
+## OpenCode Plugin Usage
 
-```bash
-# Search for auth middleware files
-opencontext --query "auth middleware" --max-files 5
+The plugin registers the `find_files` tool.
 
-# Interactive mode
-opencontext --interactive
+**Tool: `find_files`**
 
-# JSON output
-opencontext -q "database config" --json
+| Argument | Type | Default | Description |
+|----------|------|---------|-------------|
+| `query` | string | required | Search query |
+| `maxFiles` | number | 5 | Maximum results |
+| `minScore` | number | 15 | Minimum relevance score (0-100) |
+| `includeTests` | boolean | false | Include test files |
+| `includeConfigs` | boolean | false | Include config files |
+| `includeDocs` | boolean | false | Include documentation |
+
+**Example:**
+
+```
+find_files query="auth middleware" maxFiles=5
 ```
 
----
+**Scoring algorithm considers:**
+- Filename matches (exact, partial)
+- Filepath directory names
+- Content (function names, class names, imports, exports)
+- File type (tests, configs, docs)
+
+## CLI Usage
+
+```bash
+opencontext --query "auth" --max-files 5
+opencontext --interactive
+opencontext -q "database" --json
+```
+
+### Options
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `-q, --query` | Search query | required |
+| `-n, --max-files` | Maximum results | 5 |
+| `--min-score` | Minimum relevance | 15 |
+| `-p, --path` | Root path | cwd |
+| `--include-tests` | Include test files | false |
+| `--include-configs` | Include config files | false |
+| `--include-docs` | Include docs | false |
+| `--no-content` | Skip content search | false |
+| `-j, --json` | JSON output | false |
+| `-d, --detailed` | Show match reasons | false |
+| `-i, --interactive` | Interactive mode | false |
+
+## How It Works
+
+1. Scans directory with fast-glob
+2. Extracts metadata (size, language, exports, imports)
+3. Scores each file against query
+4. Returns ranked results
+
+No index persistence - scans fresh on each query.
 
 ## License
 
