@@ -2,38 +2,6 @@
 
 Semantic code search with ranked file matches and contextual line snippets showing exactly where matches occur. Available as CLI and OpenCode plugin.
 
----
-
-## Quick Reference for AI Agents
-
-**Tool:** `find_files`  
-**Purpose:** Find relevant files before reading them  
-**When to use:** User asks to find, locate, search, or "where is X"
-
-### Arguments
-
-| Name | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| query | string | **YES** | - | What to find (e.g., "auth", "database models") |
-| maxFiles | number | no | 5 | Number of results |
-| minScore | number | no | 15 | Relevance threshold (0-100) |
-| includeTests | boolean | no | false | Include *.test.*, *.spec.* |
-| includeConfigs | boolean | no | false | Include *.config.*, .rc files |
-| includeDocs | boolean | no | false | Include *.md, docs/ |
-
-### Examples
-
-```
-find_files query="authentication middleware"
-find_files query="database" maxFiles=10 includeTests=true
-find_files query="config" includeConfigs=true
-```
-
-**Scoring:** Filename (highest) > Path > Content > Imports/Exports  
-**Tip:** If no results, try `minScore=5` for broader search
-
----
-
 ## Installation
 
 ### OpenCode Plugin
@@ -64,33 +32,38 @@ bun install -g opencode-context
 
 ## OpenCode Plugin Usage
 
-The plugin registers the `find_files` tool.
+The plugin registers the `find_files` tool for semantic file search within OpenCode.
 
-**Tool: `find_files`**
+### Quick Reference for AI Agents
 
-| Argument | Type | Default | Description |
-|----------|------|---------|-------------|
-| `query` | string | required | Search query |
-| `maxFiles` | number | 5 | Maximum results |
-| `minScore` | number | 15 | Minimum relevance score (0-100) |
-| `includeTests` | boolean | false | Include test files |
-| `includeConfigs` | boolean | false | Include config files |
-| `includeDocs` | boolean | false | Include documentation |
-| `includeLinePreviews` | boolean | false | Show matching line snippets |
-| `maxSnippetsPerFile` | number | 3 | Max line snippets per file |
+**Tool:** `find_files`  
+**Purpose:** Find relevant files before reading them  
+**When to use:** User asks to find, locate, search, or "where is X"
 
-**Example:**
+### Arguments
+
+| Argument | Type | Required | Default | Description |
+|----------|------|----------|---------|-------------|
+| `query` | string | **YES** | - | What to find (e.g., "auth", "database models") |
+| `maxFiles` | number | no | 5 | Number of results |
+| `minScore` | number | no | 15 | Relevance threshold (0-100) |
+| `includeTests` | boolean | no | false | Include *.test.*, *.spec.* |
+| `includeConfigs` | boolean | no | false | Include *.config.*, .rc files |
+| `includeDocs` | boolean | no | false | Include *.md, docs/ |
+| `includeLinePreviews` | boolean | no | false | Show matching line snippets |
+| `maxSnippetsPerFile` | number | no | 3 | Max line snippets per file |
+
+### Examples
 
 ```
-find_files query="auth middleware" maxFiles=5
-find_files query="database" includeLinePreviews=true maxSnippetsPerFile=5
+find_files query="authentication middleware"
+find_files query="database" maxFiles=10 includeTests=true
+find_files query="config" includeConfigs=true
+find_files query="search" includeLinePreviews=true maxSnippetsPerFile=5
 ```
 
-**Scoring algorithm considers:**
-- Filename matches (exact, partial)
-- Filepath directory names
-- Content (function names, class names, imports, exports)
-- File type (tests, configs, docs)
+**Scoring:** Filename (highest) > Path > Content > Imports/Exports  
+**Tip:** If no results, try `minScore=5` for broader search
 
 ## CLI Usage
 
@@ -98,6 +71,7 @@ find_files query="database" includeLinePreviews=true maxSnippetsPerFile=5
 opencode-context --query "auth" --max-files 5
 opencode-context --interactive
 opencode-context -q "database" --json
+opencode-context -q "search" --line-previews --detailed
 ```
 
 ### Options
@@ -112,11 +86,11 @@ opencode-context -q "database" --json
 | `--include-configs` | Include config files | false |
 | `--include-docs` | Include docs | false |
 | `--no-content` | Skip content search | false |
+| `--line-previews` | Show matching line snippets | false |
+| `--max-snippets` | Max snippets per file | 3 |
 | `-j, --json` | JSON output | false |
 | `-d, --detailed` | Show match reasons | false |
 | `-i, --interactive` | Interactive mode | false |
-| `--line-previews` | Show matching line snippets | false |
-| `--max-snippets` | Max snippets per file | 3 |
 
 ## How It Works
 
