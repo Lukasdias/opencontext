@@ -11,7 +11,7 @@ interface SearchToolArgs {
   includeDocs?: boolean;
 }
 
-const OpenContextPlugin: Plugin = async (ctx) => {
+const OpenContextPlugin: Plugin = async () => {
   return {
     tool: {
       find_files: tool({

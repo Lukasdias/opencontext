@@ -1,10 +1,8 @@
 import { Command } from 'commander';
 import * as p from '@clack/prompts';
 import color from 'picocolors';
-import { searchFiles, parseQuery } from './search.js';
+import { searchFiles } from './search.js';
 import { SearchOptions } from './types.js';
-
-const program = new Command();
 
 function formatScore(score: number): string {
   if (score >= 80) return color.green(score.toString().padStart(3));
@@ -144,57 +142,67 @@ async function interactiveMode() {
   }
 }
 
-program
-  .name('opencontext')
-  .description('Smart file finder for codebases - semantic search with confidence scoring')
-  .version('1.0.0');
+function runCLI() {
+  const program = new Command();
 
-program
-  .option('-q, --query <query>', 'Search query')
-  .option('-n, --max-files <number>', 'Maximum number of results', '5')
-  .option('--min-score <score>', 'Minimum relevance score (0-100)', '15')
-  .option('-p, --path <path>', 'Root path to search from', process.cwd())
-  .option('--include-tests', 'Include test files', false)
-  .option('--include-configs', 'Include configuration files', false)
-  .option('--include-docs', 'Include documentation files', false)
-  .option('--no-content', 'Skip content search (faster)')
-  .option('--max-size <bytes>', 'Maximum file size to read', '1048576')
-  .option('-j, --json', 'Output as JSON', false)
-  .option('-d, --detailed', 'Show detailed match reasons', false)
-  .option('-i, --interactive', 'Interactive mode', false)
-  .action(async (options) => {
-    try {
-      if (options.interactive || !options.query) {
-        await interactiveMode();
-        return;
+  program
+    .name('opencode-context')
+    .description('Smart file finder for codebases - semantic search with confidence scoring')
+    .version('1.0.3');
+
+  program
+    .option('-q, --query <query>', 'Search query')
+    .option('-n, --max-files <number>', 'Maximum number of results', '5')
+    .option('--min-score <score>', 'Minimum relevance score (0-100)', '15')
+    .option('-p, --path <path>', 'Root path to search from', process.cwd())
+    .option('--include-tests', 'Include test files', false)
+    .option('--include-configs', 'Include configuration files', false)
+    .option('--include-docs', 'Include documentation files', false)
+    .option('--no-content', 'Skip content search (faster)')
+    .option('--max-size <bytes>', 'Maximum file size to read', '1048576')
+    .option('-j, --json', 'Output as JSON', false)
+    .option('-d, --detailed', 'Show detailed match reasons', false)
+    .option('-i, --interactive', 'Interactive mode', false)
+    .action(async (options) => {
+      try {
+        if (options.interactive || !options.query) {
+          await interactiveMode();
+          return;
+        }
+
+        const searchOptions: SearchOptions = {
+          query: options.query,
+          maxFiles: parseInt(options.maxFiles, 10),
+          minScore: parseInt(options.minScore, 10),
+          rootPath: options.path,
+          includeTests: options.includeTests,
+          includeConfigs: options.includeConfigs,
+          includeDocs: options.includeDocs,
+          searchContent: options.content !== false,
+          maxFileSize: parseInt(options.maxSize, 10),
+        };
+
+        const result = await searchFiles(searchOptions);
+
+        if (options.json) {
+          console.log(JSON.stringify(result, null, 2));
+        } else {
+          formatResults(result, options.detailed);
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(color.red(`Error: ${message}`));
+        process.exit(1);
       }
+    });
 
-      const searchOptions: SearchOptions = {
-        query: options.query,
-        maxFiles: parseInt(options.maxFiles, 10),
-        minScore: parseInt(options.minScore, 10),
-        rootPath: options.path,
-        includeTests: options.includeTests,
-        includeConfigs: options.includeConfigs,
-        includeDocs: options.includeDocs,
-        searchContent: options.content !== false,
-        maxFileSize: parseInt(options.maxSize, 10),
-      };
-
-      const result = await searchFiles(searchOptions);
-
-      if (options.json) {
-        console.log(JSON.stringify(result, null, 2));
-      } else {
-        formatResults(result, options.detailed);
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error(color.red(`Error: ${message}`));
-      process.exit(1);
-    }
-  });
-
-if (import.meta.main) {
   program.parse();
 }
+
+// Only run CLI when this file is executed directly, not when imported
+if (import.meta.main) {
+  runCLI();
+}
+
+// Export for use as library
+export { searchFiles };
