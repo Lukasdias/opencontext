@@ -1,0 +1,87 @@
+{
+  "name": "opencode-context",
+  "version": "1.0.6",
+  "description": "Smart file finder for codebases with semantic search and relevance scoring",
+  "main": "dist/plugin.js",
+  "tools": [
+    {
+      "name": "find_files",
+      "description": "Find relevant files in the codebase based on a semantic search query. Use this to locate files related to a task before reading them. Returns ranked results with relevance scores.",
+      "whenToUse": [
+        "User asks to find, locate, or search for files",
+        "Before reading multiple files to understand a codebase",
+        "Looking for specific functionality (auth, database, config, etc.)",
+        "User mentions 'where is X defined' or 'find Y'"
+      ],
+      "args": {
+        "query": {
+          "type": "string",
+          "required": true,
+          "description": "Search query describing what to find (e.g., 'auth middleware', 'user model')"
+        },
+        "maxFiles": {
+          "type": "number",
+          "required": false,
+          "default": 5,
+          "description": "Maximum number of files to return"
+        },
+        "minScore": {
+          "type": "number",
+          "required": false,
+          "default": 15,
+          "description": "Minimum relevance score (0-100). Lower = more results"
+        },
+        "includeTests": {
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "Include test files (*.test.*, *.spec.*, etc.)"
+        },
+        "includeConfigs": {
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "Include configuration files (*.config.*, .rc files)"
+        },
+        "includeDocs": {
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "Include documentation (*.md, README, docs/)"
+        }
+      },
+      "examples": [
+        {
+          "description": "Basic search",
+          "usage": "find_files query='authentication'"
+        },
+        {
+          "description": "More results with tests",
+          "usage": "find_files query='database' maxFiles=10 includeTests=true"
+        },
+        {
+          "description": "Find config files",
+          "usage": "find_files query='webpack' includeConfigs=true"
+        },
+        {
+          "description": "Low threshold for broader search",
+          "usage": "find_files query='utils' minScore=5"
+        }
+      ],
+      "bestPractices": [
+        "Call this BEFORE reading files when user asks to find something",
+        "Use maxFiles=10+ when doing initial codebase exploration",
+        "Set includeTests=true only when user specifically asks about tests",
+        "If no results, try lowering minScore to 5 or using broader terms",
+        "Results include relevance scores - files above 50 are highly relevant"
+      ],
+      "scoringFactors": [
+        "Filename matches (highest weight)",
+        "Directory path matches",
+        "Content matches (function names, class names)",
+        "Import/export statements",
+        "File type (tests ranked lower unless requested)"
+      ]
+    }
+  ]
+}

@@ -2,6 +2,38 @@
 
 Smart file finder for codebases with relevance scoring. Includes an OpenCode plugin.
 
+---
+
+## Quick Reference for AI Agents
+
+**Tool:** `find_files`  
+**Purpose:** Find relevant files before reading them  
+**When to use:** User asks to find, locate, search, or "where is X"
+
+### Arguments
+
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| query | string | **YES** | - | What to find (e.g., "auth", "database models") |
+| maxFiles | number | no | 5 | Number of results |
+| minScore | number | no | 15 | Relevance threshold (0-100) |
+| includeTests | boolean | no | false | Include *.test.*, *.spec.* |
+| includeConfigs | boolean | no | false | Include *.config.*, .rc files |
+| includeDocs | boolean | no | false | Include *.md, docs/ |
+
+### Examples
+
+```
+find_files query="authentication middleware"
+find_files query="database" maxFiles=10 includeTests=true
+find_files query="config" includeConfigs=true
+```
+
+**Scoring:** Filename (highest) > Path > Content > Imports/Exports  
+**Tip:** If no results, try `minScore=5` for broader search
+
+---
+
 ## Installation
 
 ### For Humans
