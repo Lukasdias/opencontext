@@ -4,6 +4,27 @@ Smart file finder for codebases with relevance scoring. Includes an OpenCode plu
 
 ## Installation
 
+### For Humans
+
+Copy and paste this to your LLM agent (Claude Code, Cursor, etc.):
+
+```
+Install opencode-context by following the instructions here:
+https://raw.githubusercontent.com/Lukasdias/opencontext/refs/heads/main/README.md
+```
+
+Or read the installation guide below.
+
+### For LLM Agents
+
+Fetch and follow the installation:
+
+```bash
+curl -s https://raw.githubusercontent.com/Lukasdias/opencontext/refs/heads/main/README.md
+```
+
+---
+
 ### OpenCode Plugin
 
 Add to `~/.config/opencode/opencode.json`:
@@ -60,9 +81,9 @@ find_files query="auth middleware" maxFiles=5
 ## CLI Usage
 
 ```bash
-opencontext --query "auth" --max-files 5
-opencontext --interactive
-opencontext -q "database" --json
+opencode-context --query "auth" --max-files 5
+opencode-context --interactive
+opencode-context -q "database" --json
 ```
 
 ### Options
@@ -89,6 +110,16 @@ opencontext -q "database" --json
 4. Returns ranked results
 
 No index persistence - scans fresh on each query.
+
+## Uninstallation
+
+Remove from `~/.config/opencode/opencode.json` plugins array:
+
+```json
+{
+  "plugin": []
+}
+```
 
 ## License
 
