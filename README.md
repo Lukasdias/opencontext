@@ -1,6 +1,6 @@
 # opencode-context
 
-Smart file finder for codebases with relevance scoring. Includes an OpenCode plugin.
+Semantic code search with ranked file matches and contextual line snippets showing exactly where matches occur. Available as CLI and OpenCode plugin.
 
 ---
 
@@ -97,11 +97,14 @@ The plugin registers the `find_files` tool.
 | `includeTests` | boolean | false | Include test files |
 | `includeConfigs` | boolean | false | Include config files |
 | `includeDocs` | boolean | false | Include documentation |
+| `includeLinePreviews` | boolean | false | Show matching line snippets |
+| `maxSnippetsPerFile` | number | 3 | Max line snippets per file |
 
 **Example:**
 
 ```
 find_files query="auth middleware" maxFiles=5
+find_files query="database" includeLinePreviews=true maxSnippetsPerFile=5
 ```
 
 **Scoring algorithm considers:**
@@ -133,15 +136,17 @@ opencode-context -q "database" --json
 | `-j, --json` | JSON output | false |
 | `-d, --detailed` | Show match reasons | false |
 | `-i, --interactive` | Interactive mode | false |
+| `--line-previews` | Show matching line snippets | false |
+| `--max-snippets` | Max snippets per file | 3 |
 
 ## How It Works
 
 1. Scans directory with fast-glob
-2. Extracts metadata (size, language, exports, imports)
+2. Extracts metadata (size, language, exports, imports, **line index**)
 3. Scores each file against query
-4. Returns ranked results
+4. Returns ranked results with optional line-level previews
 
-No index persistence - scans fresh on each query.
+No index persistence - scans fresh on each query. Line previews show the exact context where matches occur, with surrounding lines for full context.
 
 ## Uninstallation
 

@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import * as p from '@clack/prompts';
 import color from 'picocolors';
 import { searchFiles } from './search.js';
-import { SearchOptions } from './types.js';
+import { SearchOptions, LineSnippet } from './types.js';
 
 function formatScore(score: number): string {
   if (score >= 80) return color.green(score.toString().padStart(3));
@@ -16,7 +16,33 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
 }
 
-function formatResults(result: Awaited<ReturnType<typeof searchFiles>>, detailed: boolean = false) {
+function formatLineSnippet(snippet: LineSnippet, maxWidth: number = 80): string {
+  const lines: string[] = [];
+  const separator = color.gray('│');
+  
+  snippet.context.before.forEach((line, idx) => {
+    const lineNum = snippet.lineNumber - snippet.context.before.length + idx;
+    const trimmed = line.slice(0, maxWidth - 10);
+    lines.push(`        ${color.gray(String(lineNum).padStart(4))} ${separator} ${color.gray(trimmed)}`);
+  });
+  
+  const mainLine = snippet.content.slice(0, maxWidth - 10);
+  lines.push(`        ${color.cyan(String(snippet.lineNumber).padStart(4))} ${separator} ${mainLine}`);
+  
+  snippet.context.after.forEach((line, idx) => {
+    const lineNum = snippet.lineNumber + 1 + idx;
+    const trimmed = line.slice(0, maxWidth - 10);
+    lines.push(`        ${color.gray(String(lineNum).padStart(4))} ${separator} ${color.gray(trimmed)}`);
+  });
+  
+  return lines.join('\n');
+}
+
+function formatResults(
+  result: Awaited<ReturnType<typeof searchFiles>>, 
+  detailed: boolean = false,
+  showLinePreviews: boolean = false
+) {
   console.log('');
 
   if (result.files.length === 0) {
@@ -53,8 +79,19 @@ function formatResults(result: Awaited<ReturnType<typeof searchFiles>>, detailed
                      reason.type === 'config' ? '⚙️' :
                      '•';
         console.log(`        ${icon} ${color.gray(reason.description)}`);
+        
+        // Show line snippets if available and requested
+        if (showLinePreviews && reason.lineSnippets && reason.lineSnippets.length > 0) {
+          console.log('');
+          for (const snippet of reason.lineSnippets) {
+            console.log(formatLineSnippet(snippet));
+          }
+          console.log('');
+        }
       }
-      console.log('');
+      if (!showLinePreviews || !file.reasons.some(r => r.lineSnippets && r.lineSnippets.length > 0)) {
+        console.log('');
+      }
     }
   }
 }
@@ -116,6 +153,16 @@ async function interactiveMode() {
     process.exit(0);
   }
 
+  const showLinePreviews = await p.confirm({
+    message: 'Show matching line snippets?',
+    initialValue: false,
+  });
+
+  if (p.isCancel(showLinePreviews)) {
+    p.outro(color.yellow('Cancelled'));
+    process.exit(0);
+  }
+
   const s = p.spinner();
   s.start('Searching...');
 
@@ -127,12 +174,14 @@ async function interactiveMode() {
       includeConfigs: includeType === 'all' || includeType === 'configs',
       includeDocs: includeType === 'all',
       searchContent: true,
+      includeLinePreviews: showLinePreviews as boolean,
+      maxSnippetsPerFile: 3,
     };
 
     const result = await searchFiles(options);
     s.stop(`Search complete`);
 
-    formatResults(result, detailed as boolean);
+    formatResults(result, detailed as boolean, showLinePreviews as boolean);
     p.outro(color.green(`Found ${result.files.length} files`));
   } catch (error) {
     s.stop('Search failed');
@@ -147,8 +196,8 @@ function runCLI() {
 
   program
     .name('opencode-context')
-    .description('Smart file finder for codebases - semantic search with confidence scoring')
-    .version('1.0.3');
+    .description('Semantic code search with ranked file matches and contextual line snippets')
+    .version('1.0.8');
 
   program
     .option('-q, --query <query>', 'Search query')
@@ -160,6 +209,8 @@ function runCLI() {
     .option('--include-docs', 'Include documentation files', false)
     .option('--no-content', 'Skip content search (faster)')
     .option('--max-size <bytes>', 'Maximum file size to read', '1048576')
+    .option('--line-previews', 'Show matching line snippets', false)
+    .option('--max-snippets <number>', 'Maximum snippets per file', '3')
     .option('-j, --json', 'Output as JSON', false)
     .option('-d, --detailed', 'Show detailed match reasons', false)
     .option('-i, --interactive', 'Interactive mode', false)
@@ -180,6 +231,8 @@ function runCLI() {
           includeDocs: options.includeDocs,
           searchContent: options.content !== false,
           maxFileSize: parseInt(options.maxSize, 10),
+          includeLinePreviews: options.linePreviews,
+          maxSnippetsPerFile: parseInt(options.maxSnippets, 10),
         };
 
         const result = await searchFiles(searchOptions);
@@ -187,7 +240,7 @@ function runCLI() {
         if (options.json) {
           console.log(JSON.stringify(result, null, 2));
         } else {
-          formatResults(result, options.detailed);
+          formatResults(result, options.detailed, options.linePreviews);
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);

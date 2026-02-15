@@ -11,6 +11,7 @@ export interface MatchReason {
   description: string;
   matchedContent?: string;
   contribution: number;
+  lineSnippets?: LineSnippet[];
 }
 
 export type MatchType =
@@ -27,6 +28,15 @@ export type MatchType =
   | 'test'
   | 'related';
 
+export interface LineSnippet {
+  lineNumber: number;
+  content: string;
+  context: {
+    before: string[];
+    after: string[];
+  };
+}
+
 export interface FileMetadata {
   size: number;
   lastModified: Date;
@@ -38,6 +48,8 @@ export interface FileMetadata {
   language?: string;
   exports?: string[];
   imports?: string[];
+  lineIndex?: Map<string, number[]>;
+  content?: string;
 }
 
 export interface SearchOptions {
@@ -52,6 +64,8 @@ export interface SearchOptions {
   includeDocs?: boolean;
   searchContent?: boolean;
   maxFileSize?: number;
+  includeLinePreviews?: boolean;
+  maxSnippetsPerFile?: number;
 }
 
 export interface SearchResult {

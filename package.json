@@ -1,7 +1,7 @@
 {
   "name": "opencode-context",
-  "version": "1.0.7",
-  "description": "Smart file finder for codebases - semantic search with confidence scoring. Also available as an OpenCode plugin.",
+  "version": "1.0.8",
+  "description": "Semantic code search with ranked file matches and contextual line snippets showing exactly where matches occur. Available as CLI and OpenCode plugin.",
   "type": "module",
   "main": "./dist/plugin.js",
   "exports": {

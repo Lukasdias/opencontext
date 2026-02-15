@@ -8,6 +8,7 @@ import {
   SearchOptions,
   SearchResult,
   ParsedQuery,
+  LineSnippet,
   DEFAULT_WEIGHTS,
   DEFAULT_EXCLUDE_PATTERNS,
   LANGUAGE_EXTENSIONS,
@@ -15,6 +16,86 @@ import {
   CONFIG_PATTERNS,
   DOC_PATTERNS,
 } from './types.js';
+
+function tokenize(text: string): string[] {
+  return text
+    .toLowerCase()
+    .split(/[^a-zA-Z0-9_]+/)
+    .filter(w => w.length > 2);
+}
+
+function buildLineIndex(lines: string[]): Map<string, number[]> {
+  const index = new Map<string, number[]>();
+  
+  lines.forEach((line, idx) => {
+    const terms = tokenize(line);
+    terms.forEach(term => {
+      if (!index.has(term)) {
+        index.set(term, []);
+      }
+      index.get(term)!.push(idx + 1);
+    });
+  });
+  
+  return index;
+}
+
+function extractLineSnippets(
+  content: string,
+  lineIndex: Map<string, number[]>,
+  query: ParsedQuery,
+  maxSnippets: number = 3
+): LineSnippet[] {
+  const matchedLines = new Set<number>();
+  
+  // Find all lines matching query terms
+  for (const term of [...query.terms, ...query.exactTerms]) {
+    const positions = lineIndex.get(term.toLowerCase());
+    if (positions) {
+      positions.forEach(lineNum => matchedLines.add(lineNum));
+    }
+  }
+  
+  if (matchedLines.size === 0) {
+    return [];
+  }
+  
+  const lines = content.split('\n');
+  const sortedLines = Array.from(matchedLines).sort((a, b) => a - b);
+  
+  // Cluster nearby lines and pick best ones
+  const clusters: number[][] = [];
+  let currentCluster: number[] = [sortedLines[0]];
+  
+  for (let i = 1; i < sortedLines.length; i++) {
+    if (sortedLines[i] - sortedLines[i - 1] <= 3) {
+      currentCluster.push(sortedLines[i]);
+    } else {
+      clusters.push(currentCluster);
+      currentCluster = [sortedLines[i]];
+    }
+  }
+  clusters.push(currentCluster);
+  
+  // Take top clusters by match count
+  const topClusters = clusters
+    .sort((a, b) => b.length - a.length)
+    .slice(0, maxSnippets);
+  
+  return topClusters.map(cluster => {
+    const centerLine = cluster[Math.floor(cluster.length / 2)];
+    const lineIdx = centerLine - 1;
+    
+    return {
+      lineNumber: centerLine,
+      content: lines[lineIdx]?.trim() || '',
+      context: {
+        before: lines.slice(Math.max(0, lineIdx - 1), lineIdx).map(l => l.trim()),
+        after: lines.slice(lineIdx + 1, Math.min(lines.length, lineIdx + 2)).map(l => l.trim()),
+      },
+    };
+  });
+}
 
 export function parseQuery(query: string): ParsedQuery {
   if (!query || typeof query !== 'string') {
@@ -115,7 +196,10 @@ export function detectLanguage(filePath: string): string | undefined {
   return undefined;
 }
 
-export async function extractMetadata(filePath: string): Promise<FileMetadata> {
+export async function extractMetadata(
+  filePath: string,
+  includeLineIndex: boolean = false
+): Promise<FileMetadata> {
   const stats = await fs.stat(filePath);
   const content = await fs.readFile(filePath, 'utf-8').catch(() => '');
   const lines = content.split('\n');
@@ -131,6 +215,8 @@ export async function extractMetadata(filePath: string): Promise<FileMetadata> {
     language: detectLanguage(filePath),
     exports: extractExports(content),
     imports: extractImports(content),
+    lineIndex: includeLineIndex ? buildLineIndex(lines) : undefined,
+    content: includeLineIndex ? content : undefined,
   };
 }
 
@@ -255,36 +341,52 @@ function calculateFilepathScore(filePath: string, query: ParsedQuery): { score: 
 async function calculateContentScore(
   filePath: string,
   query: ParsedQuery,
-  content?: string
+  metadata?: FileMetadata,
+  maxSnippets?: number
 ): Promise<{ score: number; reasons: MatchReason[] }> {
   const reasons: MatchReason[] = [];
   let totalScore = 0;
 
-  const fileContent = content ?? await fs.readFile(filePath, 'utf-8').catch(() => '');
+  const fileContent = metadata?.content ?? await fs.readFile(filePath, 'utf-8').catch(() => '');
   const normalizedContent = fileContent.toLowerCase();
-  const lines = fileContent.split('\n');
 
   for (const term of query.terms) {
     const occurrences = (normalizedContent.match(new RegExp(term, 'g')) || []).length;
     if (occurrences > 0) {
       const contribution = Math.min(DEFAULT_WEIGHTS.content, DEFAULT_WEIGHTS.content * (occurrences / 5));
       totalScore += contribution;
-      reasons.push({
+      
+      const reason: MatchReason = {
         type: 'content',
         description: `Content contains "${term}" (${occurrences} occurrences)`,
         contribution,
-      });
+      };
+      
+      // Add line snippets if we have the line index
+      if (metadata?.lineIndex && metadata.content && maxSnippets && maxSnippets > 0) {
+        reason.lineSnippets = extractLineSnippets(metadata.content, metadata.lineIndex, query, maxSnippets);
+      }
+      
+      reasons.push(reason);
     }
   }
 
   for (const exact of query.exactTerms) {
     if (normalizedContent.includes(exact.toLowerCase())) {
       totalScore += DEFAULT_WEIGHTS.content * 1.5;
-      reasons.push({
+      
+      const reason: MatchReason = {
         type: 'content',
         description: `Exact phrase in content: "${exact}"`,
         contribution: DEFAULT_WEIGHTS.content * 1.5,
-      });
+      };
+      
+      // Add line snippets if we have the line index
+      if (metadata?.lineIndex && metadata.content && maxSnippets && maxSnippets > 0) {
+        reason.lineSnippets = extractLineSnippets(metadata.content, metadata.lineIndex, query, maxSnippets);
+      }
+      
+      reasons.push(reason);
     }
   }
 
@@ -393,7 +495,8 @@ export async function calculateFileScore(
   query: ParsedQuery,
   metadata: FileMetadata,
   rootPath: string,
-  searchContent: boolean
+  searchContent: boolean,
+  maxSnippets?: number
 ): Promise<FileMatch> {
   const relativePath = relative(rootPath, filePath);
 
@@ -403,7 +506,7 @@ export async function calculateFileScore(
 
   let contentResult = { score: 0, reasons: [] as MatchReason[] };
   if (searchContent && metadata.size < 1024 * 1024) {
-    contentResult = await calculateContentScore(filePath, query);
+    contentResult = await calculateContentScore(filePath, query, metadata, maxSnippets);
   }
 
   const totalScore = Math.min(100,
@@ -439,6 +542,8 @@ export async function searchFiles(options: SearchOptions): Promise<SearchResult>
   const minScore = options.minScore || 15;
   const searchContent = options.searchContent ?? true;
   const maxFileSize = options.maxFileSize || 1024 * 1024;
+  const includeLinePreviews = options.includeLinePreviews ?? false;
+  const maxSnippetsPerFile = options.maxSnippetsPerFile || 3;
 
   const excludePatterns = [
     ...DEFAULT_EXCLUDE_PATTERNS,
@@ -471,13 +576,14 @@ export async function searchFiles(options: SearchOptions): Promise<SearchResult>
       const stats = await fs.stat(filePath);
       if (stats.size > maxFileSize) continue;
 
-      const metadata = await extractMetadata(filePath);
+      const metadata = await extractMetadata(filePath, includeLinePreviews);
       const match = await calculateFileScore(
         filePath,
         parsedQuery,
         metadata,
         rootPath,
-        searchContent
+        searchContent,
+        includeLinePreviews ? maxSnippetsPerFile : 0
       );
 
       if (match.score >= minScore) {
