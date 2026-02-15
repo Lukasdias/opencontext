@@ -1,6 +1,6 @@
 {
   "name": "opencode-context",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Smart file finder for codebases - semantic search with confidence scoring. Also available as an OpenCode plugin.",
   "type": "module",
   "main": "./dist/plugin.js",
