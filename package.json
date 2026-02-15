@@ -3,8 +3,11 @@
   "version": "1.0.5",
   "description": "Smart file finder for codebases - semantic search with confidence scoring. Also available as an OpenCode plugin.",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/plugin.js",
+  "exports": {
+    ".": "./dist/plugin.js",
+    "./cli": "./dist/index.js"
+  },
   "bin": {
     "opencode-context": "dist/index.js"
   },
