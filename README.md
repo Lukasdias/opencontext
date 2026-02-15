@@ -36,27 +36,6 @@ find_files query="config" includeConfigs=true
 
 ## Installation
 
-### For Humans
-
-Copy and paste this to your LLM agent (Claude Code, Cursor, etc.):
-
-```
-Install opencode-context by following the instructions here:
-https://raw.githubusercontent.com/Lukasdias/opencontext/refs/heads/main/README.md
-```
-
-Or read the installation guide below.
-
-### For LLM Agents
-
-Fetch and follow the installation:
-
-```bash
-curl -s https://raw.githubusercontent.com/Lukasdias/opencontext/refs/heads/main/README.md
-```
-
----
-
 ### OpenCode Plugin
 
 Add to `~/.config/opencode/opencode.json`:
