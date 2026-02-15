@@ -17,6 +17,18 @@ import {
 } from './types.js';
 
 export function parseQuery(query: string): ParsedQuery {
+  if (!query || typeof query !== 'string') {
+    return {
+      original: query || '',
+      terms: [],
+      exactTerms: [],
+      fileTypes: [],
+      wantTests: false,
+      wantConfigs: false,
+      wantDocs: false,
+    };
+  }
+
   const lowerQuery = query.toLowerCase();
   const terms: string[] = [];
   const exactTerms: string[] = [];

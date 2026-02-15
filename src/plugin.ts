@@ -26,7 +26,11 @@ const OpenContextPlugin: Plugin = async () => {
         },
         async execute(args: SearchToolArgs, context) {
           const { directory } = context;
-          
+
+          if (!args.query || typeof args.query !== 'string') {
+            return "Error: query parameter is required. Usage: find_files query='search term'";
+          }
+
           const options: SearchOptions = {
             query: args.query,
             maxFiles: args.maxFiles || 5,
@@ -44,7 +48,7 @@ const OpenContextPlugin: Plugin = async () => {
             return `No files found matching "${args.query}". Scanned ${result.filesScanned} files in ${result.timeMs}ms.`;
           }
 
-          const lines = result.files.map(f => 
+          const lines = result.files.map(f =>
             `${f.relativePath} (score: ${f.score})`
           );
 
